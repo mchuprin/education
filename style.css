@@ -14,18 +14,28 @@
     display: flex;
     flex-direction: row;
     align-items: center;
+    font-size: 20px;
+}
+
+.done-task {
+    display: flex;
+    color: #0000008c;
+    text-decoration: line-through;
+    flex-direction: row;
+    align-items: center;
+    font-size: 20px;
 }
 
 .task-text {
     font-size: 16px;
 }
 
-.done-task {
-    font-size: 16px;
-    color: brown;
-}
-
 img {
     width: 15px;
     margin: 4px;
+}
+
+.check {
+    width: 20px;
+    height: 20px;
 }
