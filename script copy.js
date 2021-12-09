@@ -2,7 +2,7 @@ let allTasks = JSON.parse(localStorage.getItem('tasks')) || [];
 let input = null;
 let inputValue = '';
 let activeEditTask = null;
-let id = null;
+let editTask = null;
 
 window.onload = async function init() {
     input = document.getElementById('add-task');
@@ -42,8 +42,6 @@ onClickButton = async () => {
     render ();
 }    
 
-
-
 render = () => {
     const content = document.getElementById('content');
     while (content.firstChild) {
@@ -57,27 +55,21 @@ render = () => {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.checked = value.isCheck;
-        id = value.id;
+        checkbox.className = 'check';
         container.appendChild(checkbox)
         checkbox.onchange = function () {
-            doneTask(index)
+            doneTask(value, index)
         };
-        if(value.id === activeEditTask) {
-            const inputTask = document.createElement('input');
-            inputTask.type = 'text';
-            inputTask.value = value.text;
-            inputTask.addEventListener('change', updateTaskText);
-            inputTask.addEventListener('blur', doneEditTask);
-            container.appendChild(inputTask);
-        } else {
-            const text = document.createElement('p');
-            text.innerText = value.text;
-            container.appendChild(text);
-            text.className = value.isCheck ? 'done-task' : 'task-text'; 
-        }
-        
-        if(value.isCheck) {
-            if (value.id === activeEditTask) {
+
+
+        if (value.isCheck === false) {
+            if(value.id === activeEditTask) {
+                const inputTask = document.createElement('input');
+                inputTask.type = 'text';
+                inputTask.value = value.text;
+                inputTask.addEventListener('change', updateTaskText);
+                inputTask.addEventListener('blur', doneEditTask);
+                container.appendChild(inputTask);
                 const imageDone = document.createElement('img');
                 imageDone.src = 'done.svg';
                 imageDone.onclick = function () {
@@ -85,33 +77,64 @@ render = () => {
                 }
                 container.appendChild(imageDone);
             } else {
+                const text = document.createElement('p');
+                text.innerText = value.text;
+                container.appendChild(text);
                 const imageEdit = document.createElement('img');
+                container.appendChild(imageEdit);
                 imageEdit.src = "pencil.svg";
                 imageEdit.onclick = function () {
                     activeEditTask = value.id;
-                    render();
+                render (); 
                 }
-                container.appendChild(imageEdit);
-            }
-
-            const imageDelete = document.createElement('img');
-            imageDelete.src = "cross.svg";
-            imageDelete.onclick = function () {
-                deleteTask(index);
-            };
-            container.appendChild(imageDelete);
-        }
+                text.className = 'task';
+        } 
+        } else {
+            const text = document.createElement('p');
+            text.innerText = value.text;
+            container.appendChild(text);
+            text.className = 'done-task';
+        };
+        const imageDelete = document.createElement('img');
+                imageDelete.src = "cross.svg";
+                imageDelete.onclick = function () {
+                    deleteTask(value);
+                 };
+                container.appendChild(imageDelete);
     });
+    
 }
 
-doneTask = async (index) => {
+doneEditTask = () => {
+    activeEditTask = null;
+    render();
+}
+doneTask = async (value, index) => {
     allTasks[index].isCheck = !allTasks[index].isCheck;
+    activeEditTask = value.id;
+    console.log(activeEditTask)
+    const resp = await fetch ('http://localhost:8000/updateTask', {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json;charset=utf-8',
+            'Access-Control-Origin': '*'
+        },
+        body: JSON.stringify({
+            id: activeEditTask,
+            isCheck: allTasks[index].isCheck
+        })
+    });
+    let result = await resp.json();
+    allTasks = result.data;
+    activeEditTask = null;
     localStorage.setItem('tasks', JSON.stringify(allTasks));
     render ();
 }
 
 deleteTask = async (event) => {
-    const resp = await fetch (`http://localhost:8000/deleteTask?id=${id}`, {
+    activeEditTask = event.id;
+    console.log(activeEditTask)
+    const resp = await fetch (`http://localhost:8000/deleteTask?id=${activeEditTask}`, {
         method: 'DELETE',
     })
     let result = await resp.json();
@@ -129,18 +152,14 @@ updateTaskText = async (event) => {
         },
         body: JSON.stringify({
             id: activeEditTask,
-            text: event.target.value,
-            isCheck: false
+            text: event.target.value
         })
     });
     let result = await resp.json();
     allTasks = result.data;
-    
     localStorage.setItem('tasks', JSON.stringify(allTasks));
     render();
 }
 
-doneEditTask = async () => {
-    activeEditTask = null;
-    render();
-}
+
+
